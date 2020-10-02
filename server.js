@@ -34,8 +34,6 @@ app.post('/start/videoStream', (req, res) => {
             '-map', '0:1',
             '-map', '0:0',
             '-map', '0:1',
-            // '-map', '0:0',
-            // '-map', '0:1',
 
             '-s:v:0', '426x240',
             '-c:v:0', 'libx264',
@@ -98,10 +96,6 @@ app.use('/video', express.static(path.join(__dirname + '/videos')));
 app.use('/videojs', express.static(path.join(__dirname + '/node_modules/video.js/dist/')));
 app.use('/quality_selector', express.static(__dirname + '/node_modules/videojs-hls-quality-selector/dist/'));
 app.use('/videojs_contrib', express.static(__dirname + '/node_modules/videojs-contrib-quality-levels/dist/'));
-
-app.use("*",function(req,res){
-  res.sendFile(path.join(__dirname + "/view/404.htm"));
-});
 
 const port = process.env.APP_PORT || '5010';
 app.listen(port, err => {
