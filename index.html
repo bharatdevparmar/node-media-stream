@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Video Stream Testing</title>
+    <link href="/videojs/video-js.css" rel="stylesheet">
+    <link href="/quality_selector/videojs-hls-quality-selector.css" rel="stylesheet">
+    <script src="/videojs/video.js"></script>
+    <script src="/videojs_contrib/videojs-contrib-quality-levels.js"></script>
+    <script src="/quality_selector/videojs-hls-quality-selector.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style type="text/css">
+      .video-js .vjs-time-control{
+        display: block;
+      }
+      .video-js .vjs-remaining-time{
+        display: none;  
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="/testVideoStream">Video Stream</a></li>
+        </ul>
+      </div>
+    </nav>
+    <div class="jumbotron text-center">
+      <form>
+        <div class="form-group">
+          <label for="exampleInputEmail1">Video URL</label>
+          <input type="url" class="form-control" id="url" aria-describedby="emailHelp" required placeholder="Enter url">
+        </div>
+        <div class="form-group">
+          <label for="exampleInputEmail1">Video Name</label>
+          <input type="text" class="form-control" id="name" aria-describedby="emailHelp" placeholder="Enter video name">
+        </div>
+      </form>
+      <div class="row">
+        <label id="duration"></label>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div>
+          <video id="my_video" class="video-js vjs-default-skin" poster="https://www.craigcampbellseo.com/wp-content/uploads/2020/04/mceclip0.png" controls playsinline preload="auto" width="1200" height="750" 
+          data-setup='{}'>
+          </video>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+<script>
+  var name;
+  var videoSrc;
+  var player;
+  (function(window) {
+    player = videojs('my_video', {
+      liveui: false
+    });
+    player.bigPlayButton.on('click', async function(){
+      name = document.getElementById("name").value;
+      videoSrc = `/video/${name}.m3u8`;
+      if (!await checkStream()) {
+        createStream();
+      }
+    });
+    player.on("playing", function ()
+    {
+      player.removeClass('vjs-live');
+    });
+    player.on("waiting", function ()
+    {
+      player.addClass("vjs-custom-waiting");
+    });
+    player.on('timeupdate', function() {
+      document.getElementById("duration").innerHTML = `Video watch Duration : ${Math.round(this.currentTime())}`;
+    });
+    player.on('error', function(event) {
+        var time = player.currentTime();
+        console.error("Error code = " + player.error().code);
+        if(player.error().code === 2) {
+          player.error(null).pause().load().currentTime(time).play();
+        }
+    });
+  }(window));
+
+  function createStream () {
+    console.log("Create Stream: " + new Date());
+    player.addClass("vjs-custom-waiting");
+    var url = document.getElementById("url").value;
+    axios.post('http://127.0.0.1:5010/start/videoStream', {url, name});
+  }
+
+  async function checkStream() {
+    console.log("check stream");
+    try {
+      const http = await axios.get(videoSrc);
+      if (http.status === 200) {
+          playVideo();
+          return true;
+      }
+    } catch(err) {
+      player.error(null);
+      setTimeout(() => {
+          checkStream();
+      }, 2000)
+      return false;
+    }
+  }
+
+  function playVideo() {
+    console.log("Play: " + new Date());
+    player.src(videoSrc);
+    player.currentTime(0); 
+    player.hlsQualitySelector({
+        displayCurrentQuality: true,
+    });
+  }
+</script>
